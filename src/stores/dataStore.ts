@@ -1,6 +1,6 @@
 ﻿import { defineStore } from "pinia"
 import { ref } from "vue"
-import type { FieldNode, InputFormat, OutputFormat, SQLDialect, ToastMessage } from "@/types"
+import type { FieldNode, InputFormat, OutputFormat, SQLDialect, CaseStyle, ToastMessage } from "@/types"
 import { parseToTree } from "@/composables/useParser"
 import { generateOutput } from "@/composables/useGenerator"
 import { nanoid } from "nanoid"
@@ -31,6 +31,7 @@ export const useDataStore = defineStore("data", () => {
   const outputText = ref("")
   const sqlDialect = ref<SQLDialect>("MySQL")
   const rootClassName = ref("A")
+  const caseStyle = ref<CaseStyle>("none")
   const structureVersion = ref(0)
   const toasts = ref<ToastMessage[]>([])
 
@@ -100,7 +101,11 @@ export const useDataStore = defineStore("data", () => {
       return
     }
     try {
-      const result = generateOutput(fieldTree.value, outputFormat.value, {
+      let tree = fieldTree.value
+      if (caseStyle.value !== "none") {
+        tree = cloneTreeWithCase(fieldTree.value, caseStyle.value)
+      }
+      const result = generateOutput(tree, outputFormat.value, {
         dialect: sqlDialect.value,
         rootClassName: rootClassName.value,
       })
@@ -109,6 +114,23 @@ export const useDataStore = defineStore("data", () => {
     } catch (e) {
       addToast("Conversion failed: " + (e as Error).message, "error")
     }
+  }
+
+  function cloneTreeWithCase(nodes: FieldNode[], style: "snake" | "camel"): FieldNode[] {
+    const convert = style === "snake" ? camelToSnake : snakeToCamel
+    return nodes.map(node => ({
+      ...node,
+      name: convert(node.name),
+      children: node.children ? cloneTreeWithCase(node.children, style) : undefined,
+    }))
+  }
+
+  function snakeToCamel(s: string): string {
+    return s.replace(/_+(\w)/g, (_, c: string) => c.toUpperCase())
+  }
+
+  function camelToSnake(s: string): string {
+    return s.replace(/([A-Z])/g, "_$1").toLowerCase().replace(/^_/, "")
   }
 
   function findNodeById(nodes: FieldNode[], id: string): FieldNode | null {
@@ -337,6 +359,7 @@ export const useDataStore = defineStore("data", () => {
     deleteNode,
     addArrayItem,
     clearArray,
+    caseStyle,
     addToast,
     saveHistory,
     loadHistory,

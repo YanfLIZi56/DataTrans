@@ -125,6 +125,15 @@ onUnmounted(() => {
             <option value="SQL Server">SQL Server</option>
           </select>
         </div>
+        <div class="flex items-center gap-1">
+          <label class="text-xs font-medium text-amber-700">Field Case</label>
+          <select v-model="store.caseStyle" @change="store.performConversion()"
+            class="text-xs border-2 border-amber-300 rounded-lg px-2 py-1.5 bg-white/80 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all">
+            <option value="none">保持原样</option>
+            <option value="snake">Aa → a_a</option>
+            <option value="camel">a_a → Aa</option>
+          </select>
+        </div>
         <button @click="generateAndShowOutput"
           class="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-all transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl flex items-center gap-2 border-2 border-amber-600/30">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

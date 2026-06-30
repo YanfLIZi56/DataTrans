@@ -7,6 +7,9 @@ const store = useDataStore()
 
 const inputFormats: InputFormat[] = ["JSON", "YAML", "CSV", "SQL(DDL)", "ES Mapping", "TOML"]
 
+const apiUrl = ref("")
+const isFetching = ref(false)
+
 const isDragging = ref(false)
 const dragStartX = ref(0)
 const dragStartY = ref(0)
@@ -46,6 +49,40 @@ function onPaste(e: ClipboardEvent) {
     }
   }, 50)
 }
+
+async function fetchFromUrl() {
+  const url = apiUrl.value.trim()
+  if (!url) {
+    store.addToast("请输入 API 地址", "warning")
+    return
+  }
+  isFetching.value = true
+  try {
+    const resp = await fetch(url)
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status}: ${resp.statusText}`)
+    }
+    const text = await resp.text()
+    // 尝试格式化 JSON
+    try {
+      const obj = JSON.parse(text)
+      store.inputText = JSON.stringify(obj, null, 2)
+      store.inputFormat = "JSON"
+    } catch {
+      store.inputText = text
+    }
+    store.parseInput()
+  } catch (e) {
+    const msg = (e as Error).message || String(e)
+    if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
+      store.addToast("请求失败，可能是跨域(CORS)限制，请尝试用浏览器直接访问该地址后复制 JSON 进来", "error")
+    } else {
+      store.addToast("获取失败：" + msg, "error")
+    }
+  } finally {
+    isFetching.value = false
+  }
+}
 </script>
 
 <template>
@@ -78,6 +115,19 @@ function onPaste(e: ClipboardEvent) {
           <input type="checkbox" v-model="autoParse" class="w-3 h-3 accent-amber-500" />
           <span class="text-[10px] text-amber-600">粘贴后自动解析</span>
         </label>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-amber-800 mb-1.5">API URL (Fetch JSON)</label>
+        <div class="flex gap-1.5">
+          <input v-model="apiUrl" type="text"
+            class="flex-1 text-xs border-2 border-amber-300 rounded-lg px-3 py-1.5 bg-white/80 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
+            placeholder="https://api.example.com/data" />
+          <button @click="fetchFromUrl" :disabled="isFetching"
+            class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-400 to-amber-500 text-white hover:from-amber-500 hover:to-amber-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+            {{ isFetching ? 'Fetching...' : 'Fetch' }}
+          </button>
+        </div>
       </div>
 
       <div>
