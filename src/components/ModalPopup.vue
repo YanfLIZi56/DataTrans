@@ -31,6 +31,8 @@ function downloadContent(content: string, title: string) {
         'Java POJO': '.java',
         'Python Dataclass': '.py',
         'Go Struct': '.go',
+        'TypeScript Interface': '.ts',
+        'TOML': '.toml',
         'ES Mapping': '.json'
     }
     const ext = extensionMap[title] || '.txt'

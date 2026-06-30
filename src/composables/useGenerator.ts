@@ -18,6 +18,8 @@ export function generateOutput(tree: FieldNode[], format: OutputFormat, options:
     case 'Python Dataclass': return generatePython(tree, options)
     case 'Go Struct': return generateGo(tree, options)
     case 'ES Mapping': return generateESMapping(tree)
+    case 'TypeScript Interface': return generateTypeScript(tree, options)
+    case 'TOML': return generateTOML(tree)
     default: return ''
   }
 }
@@ -356,7 +358,6 @@ function pythonDefault(node: FieldNode): string {
 
 function generateGo(tree: FieldNode[], options: GeneratorOptions): string {
   const structName = options.rootClassName
-  // Always add json tags
   const lines = generateGoStruct(tree, structName)
   return lines.join('\n')
 }
@@ -465,4 +466,134 @@ function esFieldType(t: string): string {
 function capitalize(s: string): string {
   if (!s) return s
   return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+// --- TypeScript Interface Generator ---
+
+function generateTypeScript(tree: FieldNode[], options: GeneratorOptions): string {
+  const interfaces = collectTypeScriptInterfaces(tree, options)
+  return interfaces.map(i => i.code).join('\n\n')
+}
+
+interface TSInterface {
+  name: string
+  code: string
+}
+
+function collectTypeScriptInterfaces(nodes: FieldNode[], options: GeneratorOptions): TSInterface[] {
+  const result: TSInterface[] = []
+  const topLevel = generateTSInterfaceBody(nodes, options, result, 0)
+  result.unshift({ name: options.rootClassName, code: topLevel })
+  return result
+}
+
+function generateTSInterfaceBody(
+  nodes: FieldNode[],
+  options: GeneratorOptions,
+  allInterfaces: TSInterface[],
+  indent: number
+): string {
+  const pad = '  '.repeat(indent)
+  const lines: string[] = []
+  lines.push(`${pad}export interface ${options.rootClassName} {`)
+
+  for (const node of nodes) {
+    const tsType = tsFieldType(node, options, allInterfaces)
+    const optional = node.type === 'null' ? '?' : ''
+    lines.push(`${pad}  ${node.name}${optional}: ${tsType};`)
+  }
+
+  lines.push(`${pad}}`)
+  return lines.join('\n')
+}
+
+function tsFieldType(node: FieldNode, options: GeneratorOptions, allInterfaces: TSInterface[]): string {
+  if (node.type === 'object' && node.children) {
+    const nestedName = capitalize(node.name)
+    const nested = generateTSInterfaceBody(node.children, { ...options, rootClassName: nestedName }, allInterfaces, 0)
+    allInterfaces.push({ name: nestedName, code: nested })
+    return nestedName
+  }
+  if (node.type === 'array') {
+    if (node.arrayItemType === 'object' && node.children) {
+      const nestedName = capitalize(node.name)
+      const nested = generateTSInterfaceBody(node.children, { ...options, rootClassName: nestedName }, allInterfaces, 0)
+      allInterfaces.push({ name: nestedName, code: nested })
+      return `${nestedName}[]`
+    }
+    return `${tsPrimitiveType(node.arrayItemType || 'string')}[]`
+  }
+  return tsPrimitiveType(node.type)
+}
+
+function tsPrimitiveType(t: string): string {
+  switch (t) {
+    case 'string': return 'string'
+    case 'integer': case 'float': return 'number'
+    case 'boolean': return 'boolean'
+    case 'null': return 'null'
+    default: return 'any'
+  }
+}
+
+// --- TOML Generator ---
+
+function generateTOML(tree: FieldNode[]): string {
+  const obj = treeToObject(tree) as Record<string, unknown>
+  const lines: string[] = []
+  writeTOMLTable(obj, lines)
+  return lines.join('\n')
+}
+
+function writeTOMLTable(obj: Record<string, unknown>, lines: string[], prefix: string = '') {
+  for (const [key, val] of Object.entries(obj)) {
+    if (val !== null && typeof val === 'object' && !Array.isArray(val)) {
+      const nested = val as Record<string, unknown>
+      // 检查嵌套对象是否所有值都是简单类型（无更深嵌套）
+      const hasNested = Object.values(nested).some(v =>
+        v !== null && typeof v === 'object' && !Array.isArray(v)
+      )
+      if (hasNested) {
+        lines.push(`[${prefix}${key}]`)
+        writeTOMLTable(nested, lines, `${prefix}${key}.`)
+      } else {
+        lines.push(`[${prefix}${key}]`)
+        for (const [nk, nv] of Object.entries(nested)) {
+          lines.push(`${nk} = ${tomlValue(nv)}`)
+        }
+      }
+    } else if (Array.isArray(val)) {
+      const arr = val as unknown[]
+      if (arr.length > 0 && arr.every(v => v !== null && typeof v === 'object' && !Array.isArray(v))) {
+        for (const item of arr) {
+          lines.push(`[[${prefix}${key}]]`)
+          for (const [ik, iv] of Object.entries(item as Record<string, unknown>)) {
+            lines.push(`${ik} = ${tomlValue(iv)}`)
+          }
+        }
+      } else {
+        lines.push(`${key} = ${tomlValue(val)}`)
+      }
+    } else {
+      lines.push(`${key} = ${tomlValue(val)}`)
+    }
+  }
+}
+
+function tomlValue(val: unknown): string {
+  if (val === null || val === undefined) return '""'
+  if (typeof val === 'string') {
+    // 如果包含特殊字符，用双引号包起来
+    if (/[#\[\]=\n"]/.test(val)) {
+      return JSON.stringify(val)
+    }
+    return `"${val}"`
+  }
+  if (typeof val === 'boolean') return val ? 'true' : 'false'
+  if (typeof val === 'number') return String(val)
+  if (Array.isArray(val)) {
+    const items = (val as unknown[]).map(tomlValue)
+    return `[${items.join(', ')}]`
+  }
+  return `"${String(val)}"`
 }

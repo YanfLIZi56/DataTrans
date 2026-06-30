@@ -5,7 +5,7 @@ import type { InputFormat } from "@/types"
 
 const store = useDataStore()
 
-const inputFormats: InputFormat[] = ["JSON", "YAML", "CSV", "SQL(DDL)", "Java Object", "Python Object", "Go Object", "ES Mapping"]
+const inputFormats: InputFormat[] = ["JSON", "YAML", "CSV", "SQL(DDL)", "ES Mapping", "TOML"]
 
 const isDragging = ref(false)
 const dragStartX = ref(0)

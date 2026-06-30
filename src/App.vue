@@ -105,6 +105,8 @@ onUnmounted(() => {
             <option value="Java POJO">Java POJO</option>
             <option value="Python Dataclass">Python Dataclass</option>
             <option value="Go Struct">Go Struct</option>
+            <option value="TypeScript Interface">TypeScript Interface</option>
+            <option value="TOML">TOML</option>
             <option value="ES Mapping">ES Mapping</option>
           </select>
         </div>

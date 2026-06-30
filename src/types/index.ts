@@ -13,8 +13,8 @@ export interface FieldNode {
   decimalPlaces?: number
 }
 
-export type InputFormat = 'JSON' | 'YAML' | 'CSV' | 'SQL(DDL)' | 'Java Object' | 'Python Object' | 'Go Object' | 'ES Mapping'
-export type OutputFormat = 'JSON' | 'YAML' | 'SQL (建表)' | 'SQL (新增)' | 'SQL (查询)' | 'SQL (更新)' | 'Java POJO' | 'Python Dataclass' | 'Go Struct' | 'ES Mapping'
+export type InputFormat = 'JSON' | 'YAML' | 'CSV' | 'SQL(DDL)' | 'ES Mapping' | 'TOML'
+export type OutputFormat = 'JSON' | 'YAML' | 'SQL (建表)' | 'SQL (新增)' | 'SQL (查询)' | 'SQL (更新)' | 'Java POJO' | 'Python Dataclass' | 'Go Struct' | 'ES Mapping' | 'TypeScript Interface' | 'TOML'
 export type SQLDialect = 'MySQL' | 'PostgreSQL' | 'SQL Server'
 
 export interface ToastMessage {
