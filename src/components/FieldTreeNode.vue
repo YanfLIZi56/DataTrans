@@ -257,9 +257,8 @@ function removeNode() {
               </div>
             </div>
           </template>
-          <input v-else-if="child.type !== 'object' && !(child.type === 'array' && child.arrayItemType === 'object')"
-            type="text" :value="child.value != null ? String(child.value) : ''"
-            @input="onChildValueChange(child.id, $event)"
+          <input v-else-if="child.type !== 'object' && !(child.arrayItemType === 'object')" type="text"
+            :value="child.value != null ? String(child.value) : ''" @input="onChildValueChange(child.id, $event)"
             class="flex-1 text-[10px] font-mono bg-transparent border-b border-transparent hover:border-slate-300 focus:border-primary-500 focus:outline-none px-0.5 py-0 text-slate-500 min-w-0" />
 
           <!-- Validation indicator -->
@@ -399,7 +398,7 @@ function removeNode() {
         </div>
       </div>
     </template>
-    <input v-else-if="node.type !== 'object' && !(node.type === 'array' && node.arrayItemType === 'object')" type="text"
+    <input v-else-if="node.type !== 'object' && !(node.arrayItemType === 'object')" type="text"
       :value="node.value != null ? String(node.value) : ''" @input="onValueChange"
       class="flex-1 text-[10px] font-mono bg-transparent border-b border-transparent hover:border-slate-300 focus:border-primary-500 focus:outline-none px-0.5 py-0 text-slate-500 min-w-0" />
 
